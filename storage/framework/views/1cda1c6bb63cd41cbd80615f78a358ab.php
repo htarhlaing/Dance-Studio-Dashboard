@@ -2,32 +2,25 @@
 
 <?php $__env->startPush('styles'); ?>
         <style>
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: top; }
-            th { background: #f8fafc; }
-            .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; }
-            .available { background: #198754; }
-            .regular { background: #0d6efd; }
-            .private_booked { background: #fd7e14; }
-            .completed { background: #6b7280; }
-            .muted { color: #6b7280; font-size: 12px; margin-left: 8px; }
-            .row { display: flex; gap: 12px; align-items: end; margin-bottom: 16px; flex-wrap: wrap; }
-            label { display: block; font-size: 12px; color: #374151; margin-bottom: 6px; }
-            input { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; }
-            select { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
-            button { padding: 7px 12px; border: 1px solid #111827; background: #111827; color: #fff; border-radius: 6px; cursor: pointer; }
-            .book-link { display: inline-block; margin-left: 10px; padding: 2px 8px; border: 1px solid #111827; border-radius: 6px; color: #111827; text-decoration: none; font-size: 12px; }
+            .cell-hint { color: #6b7280; font-size: 12px; margin-left: 8px; }
         </style>
 <?php $__env->stopPush(); ?>
 
 <?php $__env->startSection('content'); ?>
-        <h1>Availability</h1>
-        <p class="muted">Business hours: <?php echo e($businessStartTime); ?>-<?php echo e($businessEndTime); ?></p>
-        <p class="muted">Private lesson duration: <?php echo e($resolvedDurationMinutes); ?> minutes</p>
-        <p class="muted">Booking interval: <?php echo e($bookingIntervalMinutes); ?> minutes</p>
+        <div class="page-header">
+            <div>
+                <h1 style="margin: 0;">Availability</h1>
+                <div class="muted">Business hours: <?php echo e($businessStartTime); ?>-<?php echo e($businessEndTime); ?></div>
+                <div class="muted">Private lesson duration: <?php echo e($resolvedDurationMinutes); ?> minutes</div>
+                <div class="muted">Booking interval: <?php echo e($bookingIntervalMinutes); ?> minutes</div>
+            </div>
+            <div class="page-actions">
+                <a class="btn btn-secondary" href="<?php echo e(url('/regular-classes')); ?>">Manage Regular Classes</a>
+            </div>
+        </div>
 
         <form method="get" action="<?php echo e(url('/availability')); ?>">
-            <div class="row">
+            <div class="form-row">
                 <div>
                     <label for="date">Date</label>
                     <input id="date" name="date" type="date" value="<?php echo e($date); ?>">
@@ -45,61 +38,74 @@
                 </div>
                 <input type="hidden" name="studio_id" value="<?php echo e($studioId); ?>">
                 <div>
-                    <button type="submit">Search</button>
+                    <button class="btn" type="submit">Search</button>
                 </div>
             </div>
         </form>
 
         <?php if(count($rooms) === 0): ?>
             <p class="muted">No rooms found for this studio.</p>
+        <?php elseif(count($availability) === 0): ?>
+            <p class="muted">No records found.</p>
         <?php else: ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 120px;">Time</th>
-                        <?php $__currentLoopData = $rooms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $room): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <th><?php echo e($room->name); ?></th>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php $__currentLoopData = $availability; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $slot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td><?php echo e($slot['time']); ?></td>
-                            <?php
-                                $byRoomId = collect($slot['rooms'])->keyBy('room_id');
-                            ?>
+                            <th style="width: 120px;">Time</th>
                             <?php $__currentLoopData = $rooms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $room): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <?php
-                                    $cell = $byRoomId->get($room->id);
-                                    $status = $cell['status'] ?? 'available';
-                                    $reason = $cell['reason'] ?? null;
-                                ?>
-                                <td>
-                                    <span class="badge <?php echo e($status); ?>"><?php echo e($status); ?></span>
-                                    <?php if($reason): ?>
-                                        <span class="muted"><?php echo e($reason); ?></span>
-                                    <?php endif; ?>
-                                    <?php if($status === 'available'): ?>
-                                        <?php
-                                            [$startTime, $endTime] = explode('-', $slot['time']);
-                                            $activeDuration = $duration ?? $resolvedDurationMinutes;
-                                            $query = http_build_query([
-                                                'date' => $date,
-                                                'room_id' => $room->id,
-                                                'start_time' => $startTime,
-                                                'end_time' => $endTime,
-                                                'duration' => $activeDuration,
-                                            ]);
-                                        ?>
-                                        <a class="book-link" href="<?php echo e(url('/private-bookings/create')); ?>?<?php echo e($query); ?>">Book</a>
-                                    <?php endif; ?>
-                                </td>
+                                <th><?php echo e($room->name); ?></th>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </tr>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php $__currentLoopData = $availability; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $slot): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <tr>
+                                <td><?php echo e($slot['time']); ?></td>
+                                <?php
+                                    $byRoomId = collect($slot['rooms'])->keyBy('room_id');
+                                ?>
+                                <?php $__currentLoopData = $rooms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $room): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php
+                                        $cell = $byRoomId->get($room->id);
+                                        $status = $cell['status'] ?? 'available';
+                                        $reason = $cell['reason'] ?? null;
+                                        $statusClass = 'status-'.$status;
+                                        $statusLabel = match ($status) {
+                                            'available' => 'Available',
+                                            'regular' => 'Regular Class',
+                                            'private_booked' => 'Booked',
+                                            'completed' => 'Completed',
+                                            'cancelled' => 'Cancelled',
+                                            default => $status,
+                                        };
+                                    ?>
+                                    <td>
+                                        <span class="badge <?php echo e($statusClass); ?>"><?php echo e($statusLabel); ?></span>
+                                        <?php if($reason): ?>
+                                            <span class="cell-hint"><?php echo e($reason); ?></span>
+                                        <?php endif; ?>
+                                        <?php if($status === 'available' && $canCreateBooking): ?>
+                                            <?php
+                                                [$startTime, $endTime] = explode('-', $slot['time']);
+                                                $activeDuration = $duration ?? $resolvedDurationMinutes;
+                                                $query = http_build_query([
+                                                    'date' => $date,
+                                                    'room_id' => $room->id,
+                                                    'start_time' => $startTime,
+                                                    'end_time' => $endTime,
+                                                    'duration' => $activeDuration,
+                                                ]);
+                                            ?>
+                                            <a class="btn btn-small btn-book" href="<?php echo e(url('/private-bookings/create')); ?>?<?php echo e($query); ?>">Book</a>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </tr>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
 <?php $__env->stopSection(); ?>
 

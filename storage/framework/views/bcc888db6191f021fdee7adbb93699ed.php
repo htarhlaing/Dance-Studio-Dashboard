@@ -2,20 +2,21 @@
 
 <?php $__env->startPush('styles'); ?>
         <style>
-            .row { display: flex; gap: 12px; align-items: end; margin-bottom: 16px; flex-wrap: wrap; }
-            label { display: block; font-size: 12px; color: #374151; margin-bottom: 6px; }
-            input, select { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; min-width: 220px; }
-            button { padding: 7px 12px; border: 1px solid #111827; background: #111827; color: #fff; border-radius: 6px; cursor: pointer; }
+            input, select { min-width: 220px; }
             .muted { color: #6b7280; font-size: 12px; margin-top: 6px; }
-            .alert { padding: 10px 12px; border-radius: 8px; margin: 12px 0; }
-            .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-            .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
             .field { margin-bottom: 12px; }
         </style>
 <?php $__env->stopPush(); ?>
 
 <?php $__env->startSection('content'); ?>
-        <h1>Create Private Booking</h1>
+        <div class="page-header">
+            <div>
+                <h1 style="margin: 0;">Create Private Booking</h1>
+            </div>
+            <div class="page-actions">
+                <a class="btn btn-secondary" href="<?php echo e($backToAvailabilityUrl); ?>">Back to Availability</a>
+            </div>
+        </div>
 
         <?php if(session('success')): ?>
             <div class="alert alert-success"><?php echo e(session('success')); ?></div>
@@ -81,7 +82,7 @@
                 </select>
             </div>
 
-            <button type="submit">Submit</button>
+            <button class="btn" type="submit">Submit</button>
         </form>
 <?php $__env->stopSection(); ?>
 

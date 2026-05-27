@@ -4,32 +4,25 @@
 
 @push('styles')
         <style>
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: top; }
-            th { background: #f8fafc; }
-            .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; }
-            .available { background: #198754; }
-            .regular { background: #0d6efd; }
-            .private_booked { background: #fd7e14; }
-            .completed { background: #6b7280; }
-            .muted { color: #6b7280; font-size: 12px; margin-left: 8px; }
-            .row { display: flex; gap: 12px; align-items: end; margin-bottom: 16px; flex-wrap: wrap; }
-            label { display: block; font-size: 12px; color: #374151; margin-bottom: 6px; }
-            input { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; }
-            select { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
-            button { padding: 7px 12px; border: 1px solid #111827; background: #111827; color: #fff; border-radius: 6px; cursor: pointer; }
-            .book-link { display: inline-block; margin-left: 10px; padding: 2px 8px; border: 1px solid #111827; border-radius: 6px; color: #111827; text-decoration: none; font-size: 12px; }
+            .cell-hint { color: #6b7280; font-size: 12px; margin-left: 8px; }
         </style>
 @endpush
 
 @section('content')
-        <h1>Availability</h1>
-        <p class="muted">Business hours: {{ $businessStartTime }}-{{ $businessEndTime }}</p>
-        <p class="muted">Private lesson duration: {{ $resolvedDurationMinutes }} minutes</p>
-        <p class="muted">Booking interval: {{ $bookingIntervalMinutes }} minutes</p>
+        <div class="page-header">
+            <div>
+                <h1 style="margin: 0;">Availability</h1>
+                <div class="muted">Business hours: {{ $businessStartTime }}-{{ $businessEndTime }}</div>
+                <div class="muted">Private lesson duration: {{ $resolvedDurationMinutes }} minutes</div>
+                <div class="muted">Booking interval: {{ $bookingIntervalMinutes }} minutes</div>
+            </div>
+            <div class="page-actions">
+                <a class="btn btn-secondary" href="{{ url('/regular-classes') }}">Manage Regular Classes</a>
+            </div>
+        </div>
 
         <form method="get" action="{{ url('/availability') }}">
-            <div class="row">
+            <div class="form-row">
                 <div>
                     <label for="date">Date</label>
                     <input id="date" name="date" type="date" value="{{ $date }}">
@@ -47,60 +40,73 @@
                 </div>
                 <input type="hidden" name="studio_id" value="{{ $studioId }}">
                 <div>
-                    <button type="submit">Search</button>
+                    <button class="btn" type="submit">Search</button>
                 </div>
             </div>
         </form>
 
         @if (count($rooms) === 0)
             <p class="muted">No rooms found for this studio.</p>
+        @elseif (count($availability) === 0)
+            <p class="muted">No records found.</p>
         @else
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 120px;">Time</th>
-                        @foreach ($rooms as $room)
-                            <th>{{ $room->name }}</th>
-                        @endforeach
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($availability as $slot)
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>{{ $slot['time'] }}</td>
-                            @php
-                                $byRoomId = collect($slot['rooms'])->keyBy('room_id');
-                            @endphp
+                            <th style="width: 120px;">Time</th>
                             @foreach ($rooms as $room)
-                                @php
-                                    $cell = $byRoomId->get($room->id);
-                                    $status = $cell['status'] ?? 'available';
-                                    $reason = $cell['reason'] ?? null;
-                                @endphp
-                                <td>
-                                    <span class="badge {{ $status }}">{{ $status }}</span>
-                                    @if ($reason)
-                                        <span class="muted">{{ $reason }}</span>
-                                    @endif
-                                    @if ($status === 'available')
-                                        @php
-                                            [$startTime, $endTime] = explode('-', $slot['time']);
-                                            $activeDuration = $duration ?? $resolvedDurationMinutes;
-                                            $query = http_build_query([
-                                                'date' => $date,
-                                                'room_id' => $room->id,
-                                                'start_time' => $startTime,
-                                                'end_time' => $endTime,
-                                                'duration' => $activeDuration,
-                                            ]);
-                                        @endphp
-                                        <a class="book-link" href="{{ url('/private-bookings/create') }}?{{ $query }}">Book</a>
-                                    @endif
-                                </td>
+                                <th>{{ $room->name }}</th>
                             @endforeach
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($availability as $slot)
+                            <tr>
+                                <td>{{ $slot['time'] }}</td>
+                                @php
+                                    $byRoomId = collect($slot['rooms'])->keyBy('room_id');
+                                @endphp
+                                @foreach ($rooms as $room)
+                                    @php
+                                        $cell = $byRoomId->get($room->id);
+                                        $status = $cell['status'] ?? 'available';
+                                        $reason = $cell['reason'] ?? null;
+                                        $statusClass = 'status-'.$status;
+                                        $statusLabel = match ($status) {
+                                            'available' => 'Available',
+                                            'regular' => 'Regular Class',
+                                            'private_booked' => 'Booked',
+                                            'completed' => 'Completed',
+                                            'cancelled' => 'Cancelled',
+                                            default => $status,
+                                        };
+                                    @endphp
+                                    <td>
+                                        <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                                        @if ($reason)
+                                            <span class="cell-hint">{{ $reason }}</span>
+                                        @endif
+                                        @if ($status === 'available' && $canCreateBooking)
+                                            @php
+                                                [$startTime, $endTime] = explode('-', $slot['time']);
+                                                $activeDuration = $duration ?? $resolvedDurationMinutes;
+                                                $query = http_build_query([
+                                                    'date' => $date,
+                                                    'room_id' => $room->id,
+                                                    'start_time' => $startTime,
+                                                    'end_time' => $endTime,
+                                                    'duration' => $activeDuration,
+                                                ]);
+                                            @endphp
+                                            <a class="btn btn-small btn-book" href="{{ url('/private-bookings/create') }}?{{ $query }}">Book</a>
+                                        @endif
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @endif
 @endsection
