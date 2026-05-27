@@ -16,6 +16,7 @@ class RegularClass extends Model
         'room_id',
         'teacher_id',
         'class_type_id',
+        'title',
         'day_of_week',
         'start_time',
         'end_time',

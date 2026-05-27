@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DanceStudio\Room;
 use App\Models\DanceStudio\Studio;
+use App\Services\DanceStudio\CurrentStudioResolver;
 use App\Services\DanceStudio\AvailabilityService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -15,10 +16,7 @@ class AvailabilityController extends Controller
         $date = $request->query('date');
         $date = is_string($date) && $date !== '' ? $date : CarbonImmutable::today()->toDateString();
 
-        $studioId = (int) $request->query('studio_id', 0);
-        if ($studioId <= 0) {
-            $studioId = (int) Studio::query()->orderBy('id')->value('id');
-        }
+        $studioId = app(CurrentStudioResolver::class)->id();
 
         $duration = $request->query('duration');
         $duration = is_numeric($duration) ? (int) $duration : null;
@@ -29,6 +27,13 @@ class AvailabilityController extends Controller
             ->where('studio_id', $studioId)
             ->orderBy('id')
             ->get(['id', 'name']);
+
+        $role = (string) (auth()->user()?->role ?? '');
+        $studio = $studioId > 0 ? Studio::query()->find($studioId) : null;
+        $canCreateBooking = true;
+        if ($role === 'teacher') {
+            $canCreateBooking = $studio !== null && (bool) $studio->teacher_can_create_booking;
+        }
 
         $resolvedDurationMinutes = $studioId > 0 ? $availabilityService->resolveDurationMinutes($studioId, $duration) : 60;
         [$businessStartTime, $businessEndTime] = $studioId > 0 ? $availabilityService->resolveBusinessHours($studioId) : ['10:00', '22:00'];
@@ -48,6 +53,7 @@ class AvailabilityController extends Controller
             'bookingIntervalMinutes' => $bookingIntervalMinutes,
             'rooms' => $rooms,
             'availability' => $availability,
+            'canCreateBooking' => $canCreateBooking,
         ]);
     }
 }

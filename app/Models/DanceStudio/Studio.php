@@ -18,6 +18,11 @@ class Studio extends Model
         'business_start_time',
         'business_end_time',
         'booking_interval_minutes',
+        'minimum_booking_notice_hours',
+        'minimum_reschedule_notice_hours',
+        'minimum_cancel_notice_hours',
+        'allow_admin_frontdesk_override_notice',
+        'teacher_can_create_booking',
         'phone',
         'address',
         'is_active',
@@ -27,6 +32,11 @@ class Studio extends Model
     {
         return [
             'booking_interval_minutes' => 'integer',
+            'minimum_booking_notice_hours' => 'integer',
+            'minimum_reschedule_notice_hours' => 'integer',
+            'minimum_cancel_notice_hours' => 'integer',
+            'allow_admin_frontdesk_override_notice' => 'boolean',
+            'teacher_can_create_booking' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

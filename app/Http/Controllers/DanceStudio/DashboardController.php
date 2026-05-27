@@ -5,6 +5,7 @@ namespace App\Http\Controllers\DanceStudio;
 use App\Http\Controllers\Controller;
 use App\Models\DanceStudio\PrivateBooking;
 use App\Models\DanceStudio\StudentPackage;
+use App\Services\DanceStudio\CurrentStudioResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
@@ -12,7 +13,7 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request)
     {
-        $studioId = 1;
+        $studioId = app(CurrentStudioResolver::class)->id();
         $today = CarbonImmutable::today();
 
         $todayPrivateBookingsCount = PrivateBooking::query()

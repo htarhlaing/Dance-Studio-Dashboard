@@ -57,6 +57,15 @@ class AvailabilityService
     {
         $day = CarbonImmutable::parse($date)->startOfDay();
         $isoWeekday = $day->isoWeekday();
+        $dayName = $day->format('l');
+        $dayShort = $day->format('D');
+        $dayOfWeekCandidates = array_values(array_unique([
+            $isoWeekday,
+            $dayName,
+            strtolower($dayName),
+            $dayShort,
+            strtolower($dayShort),
+        ]));
 
         $slotDurationMinutes = $this->resolveDurationMinutes($studioId, $durationMinutes);
         [$businessStartTime, $businessEndTime] = $this->resolveBusinessHours($studioId);
@@ -74,16 +83,21 @@ class AvailabilityService
         $regularClassesByRoomId = RegularClass::query()
             ->where('studio_id', $studioId)
             ->where('is_active', true)
-            ->where('day_of_week', $isoWeekday)
+            ->where(function ($query) use ($dayOfWeekCandidates, $isoWeekday) {
+                $query->whereIn('day_of_week', $dayOfWeekCandidates);
+                if ($isoWeekday === 7) {
+                    $query->orWhere('day_of_week', 0);
+                }
+            })
             ->where(function ($query) use ($day) {
                 $query
                     ->whereNull('starts_on')
-                    ->orWhere('starts_on', '<=', $day->toDateString());
+                    ->orWhereDate('starts_on', '<=', $day->toDateString());
             })
             ->where(function ($query) use ($day) {
                 $query
                     ->whereNull('ends_on')
-                    ->orWhere('ends_on', '>=', $day->toDateString());
+                    ->orWhereDate('ends_on', '>=', $day->toDateString());
             })
             ->get(['room_id', 'start_time', 'end_time'])
             ->groupBy('room_id');
